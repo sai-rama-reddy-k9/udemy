@@ -1,0 +1,51 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://marketplace.visualstudio.com/items?itemName=pomdtr.excalidraw-editor",
+  "elements": [
+    {
+      "id": "lFj2MfEOM5w5dh3wbBFvY",
+      "type": "text",
+      "x": 332,
+      "y": 171,
+      "width": 941.7191772460938,
+      "height": 875,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a1",
+      "roundness": null,
+      "seed": 1699551730,
+      "version": 3,
+      "versionNonce": 1950401906,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1786635997899,
+      "link": null,
+      "locked": false,
+      "text": "src/\n├── api/\n│   ├── axios.js               # Central Axios configuration (baseURL, Authorization header)\n│   ├── authApi.js             # Calls /api/auth endpoints\n│   ├── courseApi.js           # Calls /api/courses endpoints\n│   └── enrollmentApi.js       # Calls /api/enrollments endpoints\n│\n├── context/\n│   └── AuthContext.jsx        # Manages global user state, JWT tokens, login & logout logic\n│\n├── components/\n│   ├── common/\n│   │   ├── Navbar.jsx         # Header with links, search bar, and user profile/auth buttons\n│   │   ├── Footer.jsx         # Universal footer\n│   │   ├── ProtectedRoute.jsx # Guards pages from unauthenticated users\n│   │   └── RoleRoute.jsx      # Guards pages specifically for Instructors/Admins\n│   ├── courses/\n│   │   ├── CourseCard.jsx     # Card component for grid displays\n│   │   └── CourseGrid.jsx     # Grid container for lists of courses\n│   └── player/\n│       ├── VideoPlayer.jsx    # Custom HTML5 or embedded video container\n│       └── SidebarPlaylist.jsx# Lists sections and lessons with progress checkboxes\n│\n├── pages/\n│   ├── Home.jsx               # Landing page with hero banner and featured courses\n│   ├── Login.jsx              # User login form\n│   ├── Register.jsx           # User registration form\n│   ├── CourseCatalog.jsx      # Search, filter, and page layout for browsing courses\n│   ├── CourseDetail.jsx       # Single course view (curriculum overview, price, buy button)\n│   ├── StudentDashboard.jsx   # List of courses the logged-in student has bought\n│   ├── CoursePlayer.jsx       # Learning environment (video screen + lesson completion sidebar)\n│   └── InstructorDashboard.jsx# Page for instructors to manage & create their courses\n│\n├── App.jsx                    # Set up React Router routes connecting all pages\n└── main.jsx                   # Wraps App with AuthProvider & BrowserRouter",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "src/\n├── api/\n│   ├── axios.js               # Central Axios configuration (baseURL, Authorization header)\n│   ├── authApi.js             # Calls /api/auth endpoints\n│   ├── courseApi.js           # Calls /api/courses endpoints\n│   └── enrollmentApi.js       # Calls /api/enrollments endpoints\n│\n├── context/\n│   └── AuthContext.jsx        # Manages global user state, JWT tokens, login & logout logic\n│\n├── components/\n│   ├── common/\n│   │   ├── Navbar.jsx         # Header with links, search bar, and user profile/auth buttons\n│   │   ├── Footer.jsx         # Universal footer\n│   │   ├── ProtectedRoute.jsx # Guards pages from unauthenticated users\n│   │   └── RoleRoute.jsx      # Guards pages specifically for Instructors/Admins\n│   ├── courses/\n│   │   ├── CourseCard.jsx     # Card component for grid displays\n│   │   └── CourseGrid.jsx     # Grid container for lists of courses\n│   └── player/\n│       ├── VideoPlayer.jsx    # Custom HTML5 or embedded video container\n│       └── SidebarPlaylist.jsx# Lists sections and lessons with progress checkboxes\n│\n├── pages/\n│   ├── Home.jsx               # Landing page with hero banner and featured courses\n│   ├── Login.jsx              # User login form\n│   ├── Register.jsx           # User registration form\n│   ├── CourseCatalog.jsx      # Search, filter, and page layout for browsing courses\n│   ├── CourseDetail.jsx       # Single course view (curriculum overview, price, buy button)\n│   ├── StudentDashboard.jsx   # List of courses the logged-in student has bought\n│   ├── CoursePlayer.jsx       # Learning environment (video screen + lesson completion sidebar)\n│   └── InstructorDashboard.jsx# Page for instructors to manage & create their courses\n│\n├── App.jsx                    # Set up React Router routes connecting all pages\n└── main.jsx                   # Wraps App with AuthProvider & BrowserRouter",
+      "autoResize": true,
+      "lineHeight": 1.25
+    }
+  ],
+  "appState": {
+    "gridSize": 20,
+    "gridStep": 5,
+    "gridModeEnabled": false,
+    "viewBackgroundColor": "#ffffff"
+  },
+  "files": {}
+}

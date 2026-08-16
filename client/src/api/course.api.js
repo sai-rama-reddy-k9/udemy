@@ -1,6 +1,11 @@
 import API from "./axios";
 
-export const LoginUser = (userData) => API.post("/auth/login", userData);
+export const createCourse = (courseData) => API.post("/course", courseData);
 
-export const RegisterUser = (credentials) =>
-  API.post("/auth/register", credentials);
+export const getAllCourses = () => API.get("/course");
+
+export const getCourseById = (id) => API.get(`/course/${id}`);
+
+export const editCourse = (id, data) => API.put(`/course/edit/${id}`, data);
+
+export const deleteCourse = (id) => API.delete(`/course/${id}`);

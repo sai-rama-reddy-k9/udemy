@@ -4,16 +4,20 @@ import Home from "../pages/Home";
 import Register from "../pages/Register";
 import Login from "../pages/Login";
 
-import StudentDashboard from "../pages/StudentDashboard";
-import InstructorDashboard from "../pages/InstructorDashboard";
+import StudentDashboard from "../pages/student/StudentDashboard";
+import InstructorDashboard from "../pages/instructor/InstructorDashboard";
 
-import CourseCatalog from "../pages/CourseCatalog";
-import CourseDetail from "../pages/CourseDetail";
-import CoursePlayer from "../pages/CoursePlayer";
+// import CourseCatalog from "../pages/CourseCatalog";
+// import CoursePlayer from "../pages/CoursePlayer";
 
 import ProtectedRoute from "./ProtectedRoutes";
 
 import CreateCourse from "../pages/instructor/CreateCourse";
+import CourseDetails from "../pages/instructor/CourseDetails";
+import EditCourse from "../pages/instructor/EditCourse";
+
+import StudentCourseDetails from "../pages/student/StudentCourseDetails";
+import MyEnrollments from "../pages/student/MyEnrollments";
 
 const AppRoutes = () => {
   return (
@@ -21,23 +25,26 @@ const AppRoutes = () => {
       <Route path="/home" element={<Home />} />
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/course-catalog" element={<CourseCatalog />} />
-      <Route path="/course-detail" element={<CourseDetail />} />
+      {/* <Route path="/course-catalog" element={<CourseCatalog />} /> */}
 
       {/* --- Protected Routes (Log in required: Any authenticated user) --- */}
-      <Route element={<ProtectedRoute />}>
+      {/* <Route element={<ProtectedRoute />}>
         <Route path="/course-player" element={<CoursePlayer />} />
-      </Route>
+      </Route> */}
 
       {/* --- Student-Only Routes --- */}
       <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
         <Route path="/student-dashboard" element={<StudentDashboard />} />
+        <Route path="/:id" element={<StudentCourseDetails />} />
+        <Route path="/my-enrollments" element={<MyEnrollments />} />
       </Route>
 
       {/* --- Instructor-Only Routes --- */}
       <Route element={<ProtectedRoute allowedRoles={["instructor"]} />}>
         <Route path="/instructor-dashboard" element={<InstructorDashboard />} />
         <Route path="/create-course" element={<CreateCourse />} />
+        <Route path="/edit/:id" element={<EditCourse />} />
+        <Route path="/:id" element={<CourseDetails />} />
       </Route>
 
       <Route path="*" element={<div>404 page not found</div>} />

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+// import API from "../../api/axios";
+import { createCourse } from "../../api/course.api";
 
 const CreateCourse = () => {
   const navigate = useNavigate();
@@ -74,7 +76,7 @@ const CreateCourse = () => {
     try {
       console.log("Submitting Payload:", { ...courseData, sections });
       // TODO: Call API.post("/courses", payload)
-      await API.post("/course/create-course", payload);
+      await createCourse({ ...courseData, sections });
       navigate("/instructor-dashboard");
     } catch (error) {
       console.log(error);

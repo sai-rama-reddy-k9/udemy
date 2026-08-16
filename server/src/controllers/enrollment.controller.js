@@ -77,66 +77,7 @@ const getMyCourses = async (req, res) => {
   }
 };
 
-// 3. TOGGLE LESSON COMPLETION STATUS
-const toggleLessonComplete = async (req, res) => {
-  try {
-    const { courseId, lessonId } = req.body;
-    const studentId = req.user.id;
-
-    if (!courseId || !lessonId) {
-      return res
-        .status(400)
-        .json({ message: "Course ID and Lesson ID are required." });
-    }
-
-    const enrollment = await Enrollment.findOne({
-      student: studentId,
-      course: courseId,
-    });
-
-    if (!enrollment) {
-      return res
-        .status(403)
-        .json({ message: "You are not enrolled in this course." });
-    }
-
-    // Check if lesson is already completed
-    const lessonIndex = enrollment.completedLessons.indexOf(lessonId);
-
-    if (lessonIndex > -1) {
-      // Unmark lesson as completed
-      enrollment.completedLessons.splice(lessonIndex, 1);
-    } else {
-      // Mark lesson as completed
-      enrollment.completedLessons.push(lessonId);
-    }
-
-    await enrollment.save();
-
-    res.status(200).json({
-      message: "Progress updated successfully.",
-      completedLessons: enrollment.completedLessons,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Error updating lesson progress.",
-      error: error.message,
-    });
-  }
-};
-
 module.exports = {
   enrollInCourse,
   getMyCourses,
-  toggleLessonComplete,
 };
-
-// How to Calculate Progress Percentage on Frontend/API
-// When returning course details to an enrolled student, you can compute progress on the fly:
-// const totalLessons = await Lesson.countDocuments({
-//   section: { $in: sectionIds },
-// });
-// const completedCount = enrollment.completedLessons.length;
-
-// const progressPercentage =
-//   totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;

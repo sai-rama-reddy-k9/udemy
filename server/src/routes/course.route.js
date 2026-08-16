@@ -24,7 +24,7 @@ router.post(
   createCourse,
 );
 router.put(
-  "/:id",
+  "/edit/:id",
   verifyToken,
   authorizeRoles("instructor", "admin"),
   updateCourse,

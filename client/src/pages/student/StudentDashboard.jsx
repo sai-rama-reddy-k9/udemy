@@ -2,10 +2,15 @@ import { useNavigate } from "react-router-dom";
 import { getAllCourses } from "../../api/course.api";
 import { useState, useEffect } from "react";
 
+import { LogoutUser } from "../../api/auth.api";
+import { useAuth } from "../../context/AuthContext";
+
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const [myCourses, setMyCourses] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const { logoutState } = useAuth();
 
   useEffect(() => {
     const helper = async () => {
@@ -26,6 +31,16 @@ const StudentDashboard = () => {
 
   const handleCourse = async (id) => {
     navigate(`/${id}`);
+  };
+  const handleLogout = async () => {
+    try {
+      await LogoutUser();
+      logoutState();
+      // Redirect back to login after cookie is cleared
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
   };
 
   return (
@@ -51,7 +66,10 @@ const StudentDashboard = () => {
               My Enrollments
             </button>
 
-            <button className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition">
+            <button
+              className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition"
+              onClick={handleLogout}
+            >
               Logout
             </button>
           </div>

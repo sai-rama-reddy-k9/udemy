@@ -36,8 +36,8 @@ const getAllCourses = async (req, res) => {
   try {
     const { category, search, page = 1, limit = 10 } = req.query;
 
-    const filter = { isPublished: true };
-    // const filter = {};
+    // const filter = { isPublished: true };
+    const filter = {};
 
     if (category) {
       filter.category = category;

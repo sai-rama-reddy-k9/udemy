@@ -1,13 +1,17 @@
 import { useNavigate } from "react-router-dom";
+
 import { getAllCourses } from "../../api/course.api";
 import { useState, useEffect } from "react";
 
 import { LogoutUser } from "../../api/auth.api";
+
 import { useAuth } from "../../context/AuthContext";
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
+
   const [myCourses, setMyCourses] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
 
   const { logoutState } = useAuth();
@@ -30,18 +34,25 @@ const StudentDashboard = () => {
   }, []);
 
   const handleCourse = async (id) => {
-    navigate(`/${id}`);
+    navigate(`/student/course/${id}`);
   };
+
   const handleLogout = async () => {
     try {
       await LogoutUser();
+
       logoutState();
-      // Redirect back to login after cookie is cleared
+
       navigate("/login");
     } catch (err) {
       console.error("Logout error:", err);
     }
   };
+
+  // Filter courses based on title
+  const filteredCourses = myCourses.filter((course) =>
+    course.title?.toLowerCase().includes(searchTerm.toLowerCase().trim()),
+  );
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -90,15 +101,16 @@ const StudentDashboard = () => {
         <div className="mb-8">
           <input
             type="text"
-            placeholder="Search courses..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search courses by title..."
             className="w-full md:w-96 px-4 py-3 bg-white border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         {/* Course Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Course Card */}
-
+          {/* Loading */}
           {loading && (
             <div className="col-span-full text-center py-16">
               <h3 className="text-xl font-semibold text-gray-700">
@@ -107,6 +119,7 @@ const StudentDashboard = () => {
             </div>
           )}
 
+          {/* No courses at all */}
           {!loading && myCourses.length === 0 && (
             <div className="col-span-full text-center py-16">
               <h3 className="text-xl font-semibold text-gray-700">
@@ -119,8 +132,22 @@ const StudentDashboard = () => {
             </div>
           )}
 
+          {/* No search results */}
+          {!loading && myCourses.length > 0 && filteredCourses.length === 0 && (
+            <div className="col-span-full text-center py-16">
+              <h3 className="text-xl font-semibold text-gray-700">
+                No courses found
+              </h3>
+
+              <p className="text-gray-500 mt-2">
+                No course matches "{searchTerm}".
+              </p>
+            </div>
+          )}
+
+          {/* Filtered Course Cards */}
           {!loading &&
-            myCourses.map((course) => (
+            filteredCourses.map((course) => (
               <div
                 className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition"
                 key={course._id}

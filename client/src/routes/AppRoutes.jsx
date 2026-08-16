@@ -25,17 +25,11 @@ const AppRoutes = () => {
       <Route path="/home" element={<Home />} />
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
-      {/* <Route path="/course-catalog" element={<CourseCatalog />} /> */}
-
-      {/* --- Protected Routes (Log in required: Any authenticated user) --- */}
-      {/* <Route element={<ProtectedRoute />}>
-        <Route path="/course-player" element={<CoursePlayer />} />
-      </Route> */}
 
       {/* --- Student-Only Routes --- */}
       <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
         <Route path="/student-dashboard" element={<StudentDashboard />} />
-        <Route path="/:id" element={<StudentCourseDetails />} />
+        <Route path="/student/course/:id" element={<StudentCourseDetails />} />
         <Route path="/my-enrollments" element={<MyEnrollments />} />
       </Route>
 
@@ -44,7 +38,7 @@ const AppRoutes = () => {
         <Route path="/instructor-dashboard" element={<InstructorDashboard />} />
         <Route path="/create-course" element={<CreateCourse />} />
         <Route path="/edit/:id" element={<EditCourse />} />
-        <Route path="/:id" element={<CourseDetails />} />
+        <Route path="/instuctor/course/:id" element={<CourseDetails />} />
       </Route>
 
       <Route path="*" element={<div>404 page not found</div>} />
@@ -53,3 +47,15 @@ const AppRoutes = () => {
 };
 
 export default AppRoutes;
+
+{
+  /* <Route path="/course-catalog" element={<CourseCatalog />} /> */
+}
+{
+  /* --- Protected Routes (Log in required: Any authenticated user) --- */
+}
+{
+  /* <Route element={<ProtectedRoute />}>
+        <Route path="/course-player" element={<CoursePlayer />} />
+      </Route> */
+}

@@ -7,7 +7,7 @@ const {
 const { verifyToken } = require("../middleware/auth.middleware");
 
 // All enrollment endpoints require authentication
-router.post("/:id", verifyToken, enrollInCourse);
+router.post("/enroll", verifyToken, enrollInCourse);
 router.get("/my-courses", verifyToken, getMyCourses);
 
 module.exports = router;

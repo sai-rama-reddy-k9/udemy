@@ -22,6 +22,7 @@ const InstructorDashboard = () => {
   };
 
   useEffect(() => {
+    if (!user?._id) return;
     const helper = async () => {
       const myCourses = await getAllCourses();
       setMyCourses(
@@ -32,10 +33,10 @@ const InstructorDashboard = () => {
       console.log(myCourses.data.courses);
     };
     helper();
-  }, [user._id]);
+  }, [user?._id]);
 
   const handleCourse = async (id) => {
-    navigate(`/${id}`);
+    navigate(`/instuctor/course/${id}`);
   };
 
   const handleEdit = (id) => {
@@ -116,7 +117,7 @@ const InstructorDashboard = () => {
             <tbody className="divide-y divide-gray-100 text-sm">
               {myCourses &&
                 myCourses.map((course) => (
-                  <tr key={course.id} className="hover:bg-gray-50 transition">
+                  <tr key={course._id} className="hover:bg-gray-50 transition">
                     <td
                       className="p-4 font-semibold text-gray-800"
                       onClick={() => handleCourse(course._id)}

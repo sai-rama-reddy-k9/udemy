@@ -15,8 +15,10 @@ const enrollInCourse = async (req, res) => {
 
     // Check if course exists and is published
     const course = await Course.findById(courseId);
-    if (!course) {
-      return res.status(404).json({ message: "Course not found." });
+    if (!course || course.isDeleted) {
+      return res
+        .status(400)
+        .json({ message: "This course is no longer available." });
     }
 
     // Prevent duplicate enrollments
@@ -69,7 +71,24 @@ const getMyCourses = async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    res.status(200).json({ count: enrollments.length, enrollments });
+    const safeEnrollments = enrollments.map((enrollment) => {
+      const course = enrollment.course;
+
+      if (!course || course.isDeleted) {
+        return {
+          ...enrollment.toObject(),
+          course: null,
+          courseUnavailable: true,
+          message: "This course is no longer available.",
+        };
+      }
+
+      return enrollment.toObject();
+    });
+
+    res
+      .status(200)
+      .json({ count: safeEnrollments.length, enrollments: safeEnrollments });
   } catch (error) {
     res.status(500).json({
       message: "Error fetching enrolled courses.",
@@ -96,12 +115,13 @@ const getEnrolledCourse = async (req, res) => {
 
     const course = await Course.findById(courseId).populate(
       "instructor",
-      "name profilePicture"
+      "name profilePicture",
     );
 
-    if (!course) {
-      return res.status(404).json({
-        message: "Course not found.",
+    if (!course || course.isDeleted) {
+      return res.status(410).json({
+        courseUnavailable: true,
+        message: "This course is no longer available.",
       });
     }
 
@@ -119,7 +139,7 @@ const getEnrolledCourse = async (req, res) => {
           ...section.toObject(),
           lessons,
         };
-      })
+      }),
     );
 
     res.status(200).json({
@@ -134,7 +154,6 @@ const getEnrolledCourse = async (req, res) => {
     });
   }
 };
-
 
 // 4. GET A SPECIFIC LESSON WITHIN AN ENROLLED COURSE
 const getEnrolledLesson = async (req, res) => {
@@ -192,7 +211,7 @@ const getEnrolledLesson = async (req, res) => {
       lesson,
       isPreview: lesson.isPreview,
       isCompleted: enrollment.completedLessons.some(
-        (completedId) => completedId.toString() === lessonId
+        (completedId) => completedId.toString() === lessonId,
       ),
     });
   } catch (error) {
@@ -253,7 +272,7 @@ const markLessonComplete = async (req, res) => {
 
     // Check if already completed
     const isAlreadyCompleted = enrollment.completedLessons.some(
-      (completedId) => completedId.toString() === lessonId
+      (completedId) => completedId.toString() === lessonId,
     );
 
     if (isAlreadyCompleted) {
@@ -270,7 +289,9 @@ const markLessonComplete = async (req, res) => {
     // Get total lessons in course for progress calculation
     const sections = await Section.find({ course: courseId });
     const sectionIds = sections.map((s) => s._id);
-    const totalLessons = await Lesson.countDocuments({ section: { $in: sectionIds } });
+    const totalLessons = await Lesson.countDocuments({
+      section: { $in: sectionIds },
+    });
 
     res.status(200).json({
       message: "Lesson marked as complete.",
@@ -283,7 +304,9 @@ const markLessonComplete = async (req, res) => {
       totalLessons,
       progressPercentage:
         totalLessons > 0
-          ? Math.round((enrollment.completedLessons.length / totalLessons) * 100)
+          ? Math.round(
+              (enrollment.completedLessons.length / totalLessons) * 100,
+            )
           : 0,
     });
   } catch (error) {
@@ -314,9 +337,10 @@ const getCourseProgress = async (req, res) => {
 
     // Verify course exists
     const course = await Course.findById(courseId);
-    if (!course) {
-      return res.status(404).json({
-        message: "Course not found.",
+    if (!course || course.isDeleted) {
+      return res.status(410).json({
+        courseUnavailable: true,
+        message: "This course is no longer available.",
       });
     }
 
@@ -333,14 +357,16 @@ const getCourseProgress = async (req, res) => {
 
     // Filter completedLessons to only count those that still belong to the course
     const validCompletedLessons = enrollment.completedLessons.filter((id) =>
-      validLessonIds.has(id.toString())
+      validLessonIds.has(id.toString()),
     );
 
     const completedLessons = validCompletedLessons.length;
 
     // Calculate progress percentage
     const progressPercentage =
-      totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+      totalLessons > 0
+        ? Math.round((completedLessons / totalLessons) * 100)
+        : 0;
 
     res.status(200).json({
       totalLessons,
@@ -375,9 +401,10 @@ const markLessonIncomplete = async (req, res) => {
 
     // Verify course exists
     const course = await Course.findById(courseId);
-    if (!course) {
-      return res.status(404).json({
-        message: "Course not found.",
+    if (!course || course.isDeleted) {
+      return res.status(410).json({
+        courseUnavailable: true,
+        message: "This course is no longer available.",
       });
     }
 
@@ -406,7 +433,7 @@ const markLessonIncomplete = async (req, res) => {
     // Remove lesson from completedLessons (no error if not present)
     const initialLength = enrollment.completedLessons.length;
     enrollment.completedLessons = enrollment.completedLessons.filter(
-      (completedId) => completedId.toString() !== lessonId
+      (completedId) => completedId.toString() !== lessonId,
     );
 
     // Only save if something was actually removed
@@ -417,7 +444,9 @@ const markLessonIncomplete = async (req, res) => {
     // Get total lessons in course for progress calculation
     const sections = await Section.find({ course: courseId });
     const sectionIds = sections.map((s) => s._id);
-    const totalLessons = await Lesson.countDocuments({ section: { $in: sectionIds } });
+    const totalLessons = await Lesson.countDocuments({
+      section: { $in: sectionIds },
+    });
 
     res.status(200).json({
       message: "Lesson marked as incomplete.",
@@ -430,7 +459,9 @@ const markLessonIncomplete = async (req, res) => {
       totalLessons,
       progressPercentage:
         totalLessons > 0
-          ? Math.round((enrollment.completedLessons.length / totalLessons) * 100)
+          ? Math.round(
+              (enrollment.completedLessons.length / totalLessons) * 100,
+            )
           : 0,
     });
   } catch (error) {

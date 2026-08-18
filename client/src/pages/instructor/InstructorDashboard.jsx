@@ -4,11 +4,20 @@ import { LogoutUser } from "../../api/auth.api";
 import { useAuth } from "../../context/AuthContext";
 
 import { getAllCourses, deleteCourse } from "../../api/course.api";
+import { GetInstructorDashboardStats } from "../../api/instructor.api";
 
 const InstructorDashboard = () => {
   const navigate = useNavigate();
   const { logoutState, user } = useAuth();
   const [myCourses, setMyCourses] = useState([]);
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    totalEnrolledStudents: 0,
+    publishedCourses: 0,
+    draftCourses: 0,
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [statsError, setStatsError] = useState("");
 
   const instructorId = user?._id ?? user?.id;
 
@@ -51,7 +60,47 @@ const InstructorDashboard = () => {
     fetchMyCourses();
   }, [instructorId]);
 
-  const stats = useMemo(() => {
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      if (!instructorId) {
+        setLoadingStats(false);
+        return;
+      }
+
+      try {
+        setLoadingStats(true);
+        setStatsError("");
+
+        const response = await GetInstructorDashboardStats();
+        setStats({
+          totalRevenue: Number(response?.data?.totalRevenue ?? 0),
+          totalEnrolledStudents: Number(
+            response?.data?.totalEnrolledStudents ?? 0,
+          ),
+          publishedCourses: Number(response?.data?.publishedCourses ?? 0),
+          draftCourses: Number(response?.data?.draftCourses ?? 0),
+        });
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+        setStatsError(
+          error?.response?.data?.message ||
+            "Unable to load dashboard statistics right now.",
+        );
+        setStats({
+          totalRevenue: 0,
+          totalEnrolledStudents: 0,
+          publishedCourses: 0,
+          draftCourses: 0,
+        });
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchDashboardStats();
+  }, [instructorId]);
+
+  const statsSummary = useMemo(() => {
     const publishedCourses = myCourses.filter(
       (course) => course?.isPublished === true,
     ).length;
@@ -60,9 +109,6 @@ const InstructorDashboard = () => {
     return {
       publishedCourses,
       draftCourses,
-      totalRevenue: null,
-      totalEnrolledStudents: null,
-      totalCourses: myCourses.length,
     };
   }, [myCourses]);
 
@@ -112,11 +158,8 @@ const InstructorDashboard = () => {
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
           <p className="text-sm font-medium text-gray-500">Total Revenue</p>
           <h2 className="text-3xl font-bold text-gray-800 mt-2">
-            {stats.totalRevenue === null ? "N/A" : `$${stats.totalRevenue}`}
+            {loadingStats ? "Loading..." : `₹${stats.totalRevenue}`}
           </h2>
-          <p className="text-xs text-gray-500 mt-2">
-            Revenue is not exposed by the current course API.
-          </p>
         </div>
 
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
@@ -124,22 +167,25 @@ const InstructorDashboard = () => {
             Total Enrolled Students
           </p>
           <h2 className="text-3xl font-bold text-gray-800 mt-2">
-            {stats.totalEnrolledStudents === null
-              ? "N/A"
-              : stats.totalEnrolledStudents}
+            {loadingStats ? "Loading..." : stats.totalEnrolledStudents}
           </h2>
-          <p className="text-xs text-gray-500 mt-2">
-            Enrollment counts are not returned by the current API.
-          </p>
         </div>
 
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
           <p className="text-sm font-medium text-gray-500">Active Courses</p>
           <h2 className="text-3xl font-bold text-gray-800 mt-2">
-            {stats.publishedCourses} Published / {stats.draftCourses} Draft
+            {loadingStats
+              ? "Loading..."
+              : `${stats.publishedCourses} Published / ${stats.draftCourses} Draft`}
           </h2>
         </div>
       </div>
+
+      {statsError && (
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {statsError}
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
@@ -175,7 +221,7 @@ const InstructorDashboard = () => {
                       {course.isPublished ? "Published" : "Draft"}
                     </span>
                   </td>
-                  <td className="p-4 text-gray-600">{course.price}</td>
+                  <td className="p-4 text-gray-600">₹{course.price}</td>
                   <td className="p-4 text-right space-x-4">
                     <button
                       className="text-blue-600 hover:underline font-medium"

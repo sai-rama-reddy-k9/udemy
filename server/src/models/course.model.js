@@ -14,6 +14,8 @@ const courseSchema = new mongoose.Schema(
       index: true,
     },
     isPublished: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

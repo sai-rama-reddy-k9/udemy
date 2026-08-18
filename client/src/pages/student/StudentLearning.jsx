@@ -22,6 +22,7 @@ const StudentLearning = () => {
   const [loading, setLoading] = useState(true);
   const [progressLoading, setProgressLoading] = useState(false);
   const [error, setError] = useState("");
+  const [courseUnavailable, setCourseUnavailable] = useState(false);
   const [progress, setProgress] = useState({
     totalLessons: 0,
     completedLessons: 0,
@@ -92,12 +93,29 @@ const StudentLearning = () => {
         setError("");
 
         const response = await GetEnrolledCourse(id);
-        const courseData = response?.data?.course || null;
-        const sectionsData = Array.isArray(response?.data?.sections)
-          ? response.data.sections
+        const payload = response?.data ?? {};
+        const courseData = payload.course || null;
+        const isUnavailable =
+          payload.courseUnavailable === true ||
+          (payload.message &&
+            payload.message.toLowerCase().includes("no longer available"));
+
+        if (isUnavailable) {
+          setCourse(null);
+          setCourseUnavailable(true);
+          setError(payload.message || "This course is no longer available.");
+          setSections([]);
+          setLessons([]);
+          setCompletedLessons([]);
+          setSelectedLesson(null);
+          return;
+        }
+
+        const sectionsData = Array.isArray(payload.sections)
+          ? payload.sections
           : [];
-        const completed = Array.isArray(response?.data?.completedLessons)
-          ? normalizeLessonIds(response.data.completedLessons)
+        const completed = Array.isArray(payload.completedLessons)
+          ? normalizeLessonIds(payload.completedLessons)
           : [];
 
         const flattenedLessons = sectionsData.flatMap((section) =>
@@ -105,6 +123,7 @@ const StudentLearning = () => {
         );
 
         setCourse(courseData);
+        setCourseUnavailable(false);
         setSections(sectionsData);
         setLessons(flattenedLessons);
         setCompletedLessons(completed);
@@ -120,6 +139,24 @@ const StudentLearning = () => {
         if (err.response?.status === 403) {
           alert("You are not enrolled in this course.");
           navigate("/my-enrollments");
+          return;
+        }
+
+        const unavailable =
+          err.response?.status === 410 ||
+          err.response?.data?.courseUnavailable === true;
+
+        if (unavailable) {
+          setCourse(null);
+          setCourseUnavailable(true);
+          setError(
+            err.response?.data?.message ||
+              "This course is no longer available.",
+          );
+          setSections([]);
+          setLessons([]);
+          setCompletedLessons([]);
+          setSelectedLesson(null);
           return;
         }
 
@@ -221,6 +258,40 @@ const StudentLearning = () => {
           <h2 className="text-xl font-semibold text-gray-700">
             Loading course...
           </h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (courseUnavailable) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="bg-white rounded-xl shadow-sm border border-red-200 p-8 max-w-lg text-center">
+          <h2 className="text-3xl font-bold text-red-700 mb-4">
+            ⚠ Course No Longer Available
+          </h2>
+          <p className="text-gray-700 text-lg mb-4">
+            {error || "This course is no longer available."}
+          </p>
+          <p className="text-gray-600 mb-2">
+            Your enrollment has been preserved.
+          </p>
+          <p className="text-gray-600 mb-6">
+            Please contact support regarding your enrollment/refund.
+          </p>
+
+          <div className="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 mb-6">
+            Course Unavailable
+          </div>
+
+          <div>
+            <button
+              onClick={() => navigate("/my-enrollments")}
+              className="px-5 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+            >
+              Back to My Enrollments
+            </button>
+          </div>
         </div>
       </div>
     );

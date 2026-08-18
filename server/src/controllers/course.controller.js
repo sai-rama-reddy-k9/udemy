@@ -36,8 +36,7 @@ const getAllCourses = async (req, res) => {
   try {
     const { category, search, page = 1, limit = 10 } = req.query;
 
-    // const filter = { isPublished: true };
-    const filter = {};
+    const filter = { isDeleted: { $ne: true } };
 
     if (category) {
       filter.category = category;
@@ -73,10 +72,10 @@ const getCourseById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const course = await Course.findById(id).populate(
-      "instructor",
-      "name email bio profilePicture",
-    );
+    const course = await Course.findOne({
+      _id: id,
+      isDeleted: { $ne: true },
+    }).populate("instructor", "name email bio profilePicture");
 
     if (!course) {
       return res.status(404).json({ message: "Course not found." });
@@ -96,7 +95,7 @@ const updateCourse = async (req, res) => {
     const { id } = req.params;
     const course = await Course.findById(id);
 
-    if (!course) {
+    if (!course || course.isDeleted) {
       return res.status(404).json({ message: "Course not found." });
     }
 
@@ -112,7 +111,7 @@ const updateCourse = async (req, res) => {
 
     const updatedCourse = await Course.findByIdAndUpdate(
       id,
-      { $set: req.body },
+      { $set: { ...req.body, isDeleted: false, deletedAt: null } },
       { new: true, runValidators: true },
     );
 
@@ -136,6 +135,10 @@ const deleteCourse = async (req, res) => {
       return res.status(404).json({ message: "Course not found." });
     }
 
+    if (course.isDeleted) {
+      return res.status(200).json({ message: "Course already deleted." });
+    }
+
     // Ownership check
     if (
       course.instructor.toString() !== req.user.id &&
@@ -146,9 +149,18 @@ const deleteCourse = async (req, res) => {
         .json({ message: "Unauthorized: You do not own this course." });
     }
 
-    await Course.findByIdAndDelete(id);
+    course.isDeleted = true;
+    course.deletedAt = new Date();
+    await course.save();
 
-    res.status(200).json({ message: "Course deleted successfully." });
+    res.status(200).json({
+      message: "Course deleted successfully.",
+      course: {
+        _id: course._id,
+        isDeleted: course.isDeleted,
+        deletedAt: course.deletedAt,
+      },
+    });
   } catch (error) {
     res
       .status(500)

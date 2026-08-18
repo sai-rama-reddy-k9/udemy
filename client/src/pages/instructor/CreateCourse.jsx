@@ -332,7 +332,7 @@ const CreateCourse = () => {
                 onClick={handleSubmit}
                 className="px-8 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition shadow-md"
               >
-                Save & Publish Course
+                Save Course
               </button>
             </div>
           </div>

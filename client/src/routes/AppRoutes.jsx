@@ -19,6 +19,8 @@ import EditCourse from "../pages/instructor/EditCourse";
 import StudentCourseDetails from "../pages/student/StudentCourseDetails";
 import MyEnrollments from "../pages/student/MyEnrollments";
 
+import StudentLearning from "../pages/student/StudentLearning";
+
 const AppRoutes = () => {
   return (
     <Routes>
@@ -31,6 +33,8 @@ const AppRoutes = () => {
         <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/student/course/:id" element={<StudentCourseDetails />} />
         <Route path="/my-enrollments" element={<MyEnrollments />} />
+
+        <Route path="/student/course/:id" element={<StudentLearning />} />
       </Route>
 
       {/* --- Instructor-Only Routes --- */}

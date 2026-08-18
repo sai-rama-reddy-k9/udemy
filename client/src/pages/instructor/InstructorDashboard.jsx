@@ -21,19 +21,25 @@ const InstructorDashboard = () => {
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
+  const fetchMyCourses = async () => {
     if (!user?._id) return;
-    const helper = async () => {
-      const myCourses = await getAllCourses();
-      setMyCourses(
-        myCourses.data.courses.filter(
-          (course) => course.instructor._id === user._id,
-        ),
+
+    try {
+      const response = await getAllCourses();
+
+      const instructorCourses = response.data.courses.filter(
+        (course) => course.instructor?._id === user._id,
       );
-      console.log(myCourses.data.courses);
-    };
-    helper();
-  }, [user?._id]);
+
+      setMyCourses(instructorCourses);
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    }
+  };
+
+  fetchMyCourses();
+}, [user?._id]);
 
   const handleCourse = async (id) => {
     navigate(`/instuctor/course/${id}`);

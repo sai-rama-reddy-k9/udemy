@@ -1,6 +1,7 @@
 const Enrollment = require("../models/enrollment.model");
 const Course = require("../models/course.model");
 const Lesson = require("../models/lesson.model");
+const Section = require("../models/section.model");
 
 // 1. SIMULATE PURCHASE / ENROLL IN A COURSE
 const enrollInCourse = async (req, res) => {
@@ -77,7 +78,66 @@ const getMyCourses = async (req, res) => {
   }
 };
 
+const getEnrolledCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const studentId = req.user.id;
+
+    const enrollment = await Enrollment.findOne({
+      student: studentId,
+      course: courseId,
+    });
+
+    if (!enrollment) {
+      return res.status(403).json({
+        message: "You are not enrolled in this course.",
+      });
+    }
+
+    const course = await Course.findById(courseId).populate(
+      "instructor",
+      "name profilePicture"
+    );
+
+    if (!course) {
+      return res.status(404).json({
+        message: "Course not found.",
+      });
+    }
+
+    const sections = await Section.find({
+      course: courseId,
+    }).sort({ order: 1 });
+
+    const sectionsWithLessons = await Promise.all(
+      sections.map(async (section) => {
+        const lessons = await Lesson.find({
+          section: section._id,
+        }).sort({ order: 1 });
+
+        return {
+          ...section.toObject(),
+          lessons,
+        };
+      })
+    );
+
+    res.status(200).json({
+      course,
+      sections: sectionsWithLessons,
+      completedLessons: enrollment.completedLessons,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching enrolled course.",
+      error: error.message,
+    });
+  }
+};
+
+
 module.exports = {
   enrollInCourse,
   getMyCourses,
+  getEnrolledCourse,
 };

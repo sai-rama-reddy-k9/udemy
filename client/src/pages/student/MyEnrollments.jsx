@@ -36,12 +36,12 @@ const MyEnrollments = () => {
             </p>
           </div>
 
-          {/* <button
+          <button
             onClick={() => navigate("/student-dashboard")}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition"
           >
-            Browse Courses
-          </button> */}
+           {"< ---- "} Cancle
+          </button>
         </div>
       </header>
 

@@ -74,7 +74,7 @@ const CreateCourse = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      console.log("Submitting Payload:", { ...courseData, sections });
+      // console.log("Submitting Payload:", { ...courseData, sections });
       // TODO: Call API.post("/courses", payload)
       await createCourse({ ...courseData, sections });
       navigate("/instructor-dashboard");

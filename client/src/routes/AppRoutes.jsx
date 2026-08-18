@@ -32,9 +32,8 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
         <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/student/course/:id" element={<StudentCourseDetails />} />
+        <Route path="/student/learn/:id" element={<StudentLearning />} />
         <Route path="/my-enrollments" element={<MyEnrollments />} />
-
-        <Route path="/student/course/:id" element={<StudentLearning />} />
       </Route>
 
       {/* --- Instructor-Only Routes --- */}
@@ -42,7 +41,7 @@ const AppRoutes = () => {
         <Route path="/instructor-dashboard" element={<InstructorDashboard />} />
         <Route path="/create-course" element={<CreateCourse />} />
         <Route path="/edit/:id" element={<EditCourse />} />
-        <Route path="/instuctor/course/:id" element={<CourseDetails />} />
+        <Route path="/instructor/course/:id" element={<CourseDetails />} />
       </Route>
 
       <Route path="*" element={<div>404 page not found</div>} />

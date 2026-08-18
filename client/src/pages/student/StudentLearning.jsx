@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import {
+  GetCourseProgress,
   GetEnrolledCourse,
-  ToggleLessonComplete,
+  MarkLessonComplete,
+  MarkLessonIncomplete,
 } from "../../api/enrollment.api";
+import VideoPlayer from "../../components/player/VideoPlayer";
+import SidebarPlaylist from "../../components/player/SidebarPlaylist";
 
 const StudentLearning = () => {
   const { id } = useParams();
@@ -12,31 +16,107 @@ const StudentLearning = () => {
 
   const [course, setCourse] = useState(null);
   const [sections, setSections] = useState([]);
+  const [lessons, setLessons] = useState([]);
   const [completedLessons, setCompletedLessons] = useState([]);
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [progressLoading, setProgressLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [progress, setProgress] = useState({
+    totalLessons: 0,
+    completedLessons: 0,
+    percentage: 0,
+  });
+
+  const currentLessonIndex = useMemo(() => {
+    if (!selectedLesson || !lessons.length) return -1;
+    return lessons.findIndex((lesson) => lesson._id === selectedLesson._id);
+  }, [lessons, selectedLesson]);
+
+  const prevDisabled = currentLessonIndex <= 0;
+  const nextDisabled =
+    currentLessonIndex === -1 || currentLessonIndex >= lessons.length - 1;
+
+  const fetchProgress = async (courseId) => {
+    if (!courseId) return;
+
+    try {
+      setProgressLoading(true);
+      const response = await GetCourseProgress(courseId);
+      const payload = response?.data ?? {};
+      const totalLessons = Number(payload.totalLessons ?? payload.total ?? 0);
+      const completedCount = Number(
+        payload.completedLessons ?? payload.completed ?? 0,
+      );
+      const percentage =
+        totalLessons > 0
+          ? Math.round((completedCount / totalLessons) * 100)
+          : 0;
+
+      setProgress({
+        totalLessons,
+        completedLessons: completedCount,
+        percentage,
+      });
+    } catch (err) {
+      console.error("Error fetching course progress:", err);
+      setError(
+        err.response?.data?.message ||
+          "Unable to load course progress right now.",
+      );
+    } finally {
+      setProgressLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchCourse = async () => {
+      if (!id) {
+        setLoading(false);
+        setError("Course ID is missing.");
+        return;
+      }
+
       try {
+        setLoading(true);
+        setError("");
+
         const response = await GetEnrolledCourse(id);
+        const courseData = response?.data?.course || null;
+        const sectionsData = Array.isArray(response?.data?.sections)
+          ? response.data.sections
+          : [];
+        const completed = Array.isArray(response?.data?.completedLessons)
+          ? response.data.completedLessons
+          : [];
 
-        setCourse(response.data.course);
-        setSections(response.data.sections);
-        setCompletedLessons(response.data.completedLessons || []);
+        const flattenedLessons = sectionsData.flatMap((section) =>
+          Array.isArray(section.lessons) ? section.lessons : [],
+        );
 
-        const firstLesson = response.data.sections?.[0]?.lessons?.[0];
+        setCourse(courseData);
+        setSections(sectionsData);
+        setLessons(flattenedLessons);
+        setCompletedLessons(completed);
 
-        if (firstLesson) {
-          setSelectedLesson(firstLesson);
-        }
-      } catch (error) {
-        console.error(error);
+        const firstLesson =
+          flattenedLessons.find((lesson) => lesson?._id) || null;
+        setSelectedLesson(firstLesson);
 
-        if (error.response?.status === 403) {
+        await fetchProgress(id);
+      } catch (err) {
+        console.error("Error fetching enrolled course:", err);
+
+        if (err.response?.status === 403) {
           alert("You are not enrolled in this course.");
           navigate("/my-enrollments");
+          return;
         }
+
+        setError(
+          err.response?.data?.message ||
+            "Unable to load this course right now.",
+        );
       } finally {
         setLoading(false);
       }
@@ -45,123 +125,209 @@ const StudentLearning = () => {
     fetchCourse();
   }, [id, navigate]);
 
-  const handleComplete = async (lessonId) => {
-    try {
-      const response = await ToggleLessonComplete(id, lessonId);
+  const handleSelectLesson = (lesson) => {
+    setSelectedLesson(lesson);
+  };
 
-      setCompletedLessons(response.data.completedLessons);
-    } catch (error) {
-      console.error(error);
+  const goToPreviousLesson = () => {
+    if (prevDisabled || currentLessonIndex <= 0) return;
+    setSelectedLesson(lessons[currentLessonIndex - 1]);
+  };
+
+  const goToNextLesson = () => {
+    if (nextDisabled || currentLessonIndex === -1) return;
+    setSelectedLesson(lessons[currentLessonIndex + 1]);
+  };
+
+  const handleComplete = async (lessonId) => {
+    if (!id || !lessonId || completedLessons.includes(lessonId)) return;
+
+    try {
+      const response = await MarkLessonComplete(id, lessonId);
+      const updatedCompletedLessons = Array.isArray(
+        response?.data?.completedLessons,
+      )
+        ? response.data.completedLessons
+        : [...completedLessons, lessonId];
+
+      setCompletedLessons(updatedCompletedLessons);
+      await fetchProgress(id);
+    } catch (err) {
+      console.error("Error marking lesson complete:", err);
+      setError(
+        err.response?.data?.message ||
+          "Unable to update lesson progress right now.",
+      );
     }
   };
 
+  const handleIncomplete = async (lessonId) => {
+    if (!id || !lessonId || !completedLessons.includes(lessonId)) return;
+
+    try {
+      const response = await MarkLessonIncomplete(id, lessonId);
+      const updatedCompletedLessons = Array.isArray(
+        response?.data?.completedLessons,
+      )
+        ? response.data.completedLessons
+        : completedLessons.filter((item) => item !== lessonId);
+
+      setCompletedLessons(updatedCompletedLessons);
+      await fetchProgress(id);
+    } catch (err) {
+      console.error("Error marking lesson incomplete:", err);
+      setError(
+        err.response?.data?.message ||
+          "Unable to update lesson progress right now.",
+      );
+    }
+  };
+
+  const selectedLessonVideo =
+    selectedLesson?.videoUrl ||
+    selectedLesson?.video ||
+    selectedLesson?.contentUrl ||
+    selectedLesson?.url ||
+    selectedLesson?.link;
+
+  const selectedLessonContent =
+    selectedLesson?.description ||
+    selectedLesson?.content ||
+    "No lesson description is available for this lesson.";
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading course...
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-700">
+            Loading course...
+          </h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 max-w-lg text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-3">
+            Something went wrong
+          </h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => navigate("/my-enrollments")}
+            className="px-5 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+          >
+            Back to Enrollments
+          </button>
+        </div>
       </div>
     );
   }
 
   if (!course) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        Course not found.
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-3">
+            Course not found
+          </h2>
+          <button
+            onClick={() => navigate("/my-enrollments")}
+            className="px-5 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+          >
+            Go to My Enrollments
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header */}
       <header className="bg-gray-900 text-white px-6 py-4 flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold">{course.title}</h1>
-
+          <h1 className="text-xl font-bold">{course.title || "Course"}</h1>
           <p className="text-sm text-gray-400">
-            Instructor: {course.instructor?.name}
+            Instructor: {course.instructor?.name || "Instructor"}
           </p>
         </div>
 
-        <button
-          onClick={() => navigate("/my-enrollments")}
-          className="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600"
-        >
-          Back
-        </button>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-300">
+            {progress.completedLessons || completedLessons.length}/
+            {progress.totalLessons || lessons.length} complete
+          </span>
+          <button
+            onClick={() => navigate("/my-enrollments")}
+            className="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600"
+          >
+            Back
+          </button>
+        </div>
       </header>
 
-      <div className="flex min-h-[calc(100vh-80px)]">
-        {/* Sidebar */}
-        <aside className="w-80 bg-white border-r p-5 overflow-y-auto">
-          <h2 className="text-lg font-bold mb-5">Course Content</h2>
+      <div className="flex min-h-[calc(100vh-80px)] flex-col lg:flex-row">
+        <SidebarPlaylist
+          sections={sections}
+          selectedLessonId={selectedLesson?._id}
+          completedLessons={completedLessons}
+          onSelectLesson={handleSelectLesson}
+        />
 
-          {sections.map((section) => (
-            <div key={section._id} className="mb-6">
-              <h3 className="font-semibold text-gray-800 mb-2">
-                {section.title}
-              </h3>
+        <main className="flex-1 p-6 lg:p-8">
+          <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                  Course Progress
+                </p>
+                <p className="text-sm text-gray-600">
+                  {progressLoading
+                    ? "Loading..."
+                    : `${progress.completedLessons || completedLessons.length} / ${progress.totalLessons || lessons.length} lessons`}
+                </p>
+              </div>
 
-              <div className="space-y-1">
-                {section.lessons.map((lesson) => {
-                  const completed = completedLessons.includes(lesson._id);
-
-                  return (
-                    <button
-                      key={lesson._id}
-                      onClick={() => setSelectedLesson(lesson)}
-                      className={`w-full text-left p-3 rounded-lg text-sm ${
-                        selectedLesson?._id === lesson._id
-                          ? "bg-blue-100 text-blue-700"
-                          : "hover:bg-gray-100"
-                      }`}
-                    >
-                      <div className="flex justify-between">
-                        <span>{lesson.title}</span>
-
-                        {completed && <span className="text-green-600">✓</span>}
-                      </div>
-                    </button>
-                  );
-                })}
+              <div className="text-sm font-semibold text-gray-700">
+                {progressLoading
+                  ? "Updating..."
+                  : `${progress.percentage || 0}%`}
               </div>
             </div>
-          ))}
-        </aside>
 
-        {/* Main Learning Area */}
-        <main className="flex-1 p-8">
-          {selectedLesson ? (
-            <>
-              <h2 className="text-2xl font-bold mb-5">
-                {selectedLesson.title}
+            <div className="mt-3 h-2.5 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-green-500 transition-all duration-300"
+                style={{ width: `${progress.percentage || 0}%` }}
+              />
+            </div>
+          </div>
+
+          {selectedLesson && (
+            <VideoPlayer
+              lesson={selectedLesson}
+              lessonDescription={selectedLessonContent}
+              videoUrl={selectedLessonVideo}
+              isCompleted={completedLessons.includes(selectedLesson._id)}
+              onMarkComplete={() => handleComplete(selectedLesson._id)}
+              onMarkIncomplete={() => handleIncomplete(selectedLesson._id)}
+              onPrevious={goToPreviousLesson}
+              onNext={goToNextLesson}
+              previousDisabled={prevDisabled}
+              nextDisabled={nextDisabled}
+            />
+          )}
+
+          {!selectedLesson && !lessons.length && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-10 text-center">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                No lessons available
               </h2>
-
-              <div className="bg-black rounded-xl overflow-hidden">
-                <video
-                  key={selectedLesson._id}
-                  src={selectedLesson.videoUrl}
-                  controls
-                  className="w-full max-h-150"
-                />
-              </div>
-
-              <button
-                onClick={() => handleComplete(selectedLesson._id)}
-                className={`mt-5 px-5 py-3 rounded-lg font-semibold ${
-                  completedLessons.includes(selectedLesson._id)
-                    ? "bg-green-600 text-white"
-                    : "bg-blue-600 text-white"
-                }`}
-              >
-                {completedLessons.includes(selectedLesson._id)
-                  ? "Completed ✓"
-                  : "Mark as Complete"}
-              </button>
-            </>
-          ) : (
-            <div className="text-center mt-20">
-              <h2 className="text-xl font-semibold">No lessons available.</h2>
+              <p className="text-gray-500">
+                This course has not published any lessons yet.
+              </p>
             </div>
           )}
         </main>

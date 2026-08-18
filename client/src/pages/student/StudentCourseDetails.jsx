@@ -17,51 +17,54 @@ const StudentCourseDetails = () => {
   const [instructor, setInstructor] = useState("");
   const [created, setCreated] = useState(null);
 
-useEffect(() => {
-  const getCourse = async () => {
-    const response = await getCourseById(id);
+  useEffect(() => {
+    const getCourse = async () => {
+      const response = await getCourseById(id);
 
-    setTitle(response.data.course.title);
-    setDescription(response.data.course.description);
-    setCategory(response.data.course.category);
-    setPrice(response.data.course.price);
-    setThumbnail(response.data.course.thumbnail);
-    setInstructor(response.data.course.instructor.name);
-    setCreated(response.data.course.createdAt);
-  };
+      setTitle(response.data.course.title);
+      setDescription(response.data.course.description);
+      setCategory(response.data.course.category);
+      setPrice(response.data.course.price);
+      setThumbnail(response.data.course.thumbnail);
+      setInstructor(response.data.course.instructor.name);
+      setCreated(response.data.course.createdAt);
+    };
 
-  const checkEnrollment = async () => {
+    const checkEnrollment = async () => {
+      try {
+        const response = await GetMyEnrollments();
+
+        const alreadyEnrolled = response.data.enrollments.some((enrollment) => {
+          const courseId =
+            enrollment?.course?._id ??
+            enrollment?.course ??
+            enrollment?.courseId;
+          return String(courseId) === String(id);
+        });
+
+        setIsEnrolled(alreadyEnrolled);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    getCourse();
+    checkEnrollment();
+  }, [id]);
+
+  const handleEnroll = async (id) => {
+    if (isEnrolled) {
+      navigate(`/student/learn/${id}`);
+      return;
+    }
+
     try {
-      const response = await GetMyEnrollments();
-
-      const alreadyEnrolled = response.data.enrollments.some(
-        (enrollment) =>
-          enrollment.course._id === id || enrollment.course === id,
-      );
-
-      setIsEnrolled(alreadyEnrolled);
+      await EnrollCourse(id);
+      navigate("/my-enrollments");
     } catch (error) {
       console.log(error);
     }
   };
-
-  getCourse();
-  checkEnrollment();
-}, [id]);
-
-const handleEnroll = async (id) => {
-  if (isEnrolled) {
-    alert("You are already enrolled in this course.");
-    return;
-  }
-
-  try {
-    await EnrollCourse(id);
-    navigate("/my-enrollments");
-  } catch (error) {
-    console.log(error);
-  }
-};
 
   return (
     <div className="min-h-screen bg-gray-100 px-6 py-10">
@@ -124,7 +127,7 @@ const handleEnroll = async (id) => {
               }`}
               onClick={() => handleEnroll(id)}
             >
-              {isEnrolled ? "Already Enrolled" : "Enroll Course"}
+              {isEnrolled ? "Continue Learning" : "Enroll Course"}
             </button>
 
             <button

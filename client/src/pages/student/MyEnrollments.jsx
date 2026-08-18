@@ -40,7 +40,7 @@ const MyEnrollments = () => {
             onClick={() => navigate("/student-dashboard")}
             className="px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition"
           >
-           {"< ---- "} Cancle
+            {"< ---- "} Cancel
           </button>
         </div>
       </header>
@@ -122,7 +122,7 @@ const MyEnrollments = () => {
 
                     <button
                       onClick={() =>
-                        navigate(`/student/course/${enrollment.course?._id}`)
+                        navigate(`/student/learn/${enrollment.course?._id}`)
                       }
                       className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition"
                     >

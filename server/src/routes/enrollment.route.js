@@ -4,6 +4,10 @@ const {
   enrollInCourse,
   getMyCourses,
   getEnrolledCourse,
+  getEnrolledLesson,
+  markLessonComplete,
+  getCourseProgress,
+  markLessonIncomplete,
 } = require("../controllers/enrollment.controller");
 const { verifyToken } = require("../middleware/auth.middleware");
 
@@ -11,5 +15,17 @@ const { verifyToken } = require("../middleware/auth.middleware");
 router.post("/enroll", verifyToken, enrollInCourse);
 router.get("/my-courses", verifyToken, getMyCourses);
 router.get("/course/:courseId", verifyToken, getEnrolledCourse);
+router.get("/course/:courseId/lesson/:lessonId", verifyToken, getEnrolledLesson);
+router.patch(
+  "/course/:courseId/lessons/:lessonId/complete",
+  verifyToken,
+  markLessonComplete
+);
+router.patch(
+  "/course/:courseId/lessons/:lessonId/incomplete",
+  verifyToken,
+  markLessonIncomplete
+);
+router.get("/course/:courseId/progress", verifyToken, getCourseProgress);
 
 module.exports = router;

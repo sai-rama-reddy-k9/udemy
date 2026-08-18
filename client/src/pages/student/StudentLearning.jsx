@@ -28,6 +28,16 @@ const StudentLearning = () => {
     percentage: 0,
   });
 
+  const normalizeLessonIds = (ids = []) =>
+    ids.map((id) =>
+      id && typeof id === "object" ? id.toString() : String(id),
+    );
+
+  const isLessonCompleted = (lessonId) =>
+    completedLessons.some(
+      (completedId) => String(completedId) === String(lessonId),
+    );
+
   const currentLessonIndex = useMemo(() => {
     if (!selectedLesson || !lessons.length) return -1;
     return lessons.findIndex((lesson) => lesson._id === selectedLesson._id);
@@ -87,7 +97,7 @@ const StudentLearning = () => {
           ? response.data.sections
           : [];
         const completed = Array.isArray(response?.data?.completedLessons)
-          ? response.data.completedLessons
+          ? normalizeLessonIds(response.data.completedLessons)
           : [];
 
         const flattenedLessons = sectionsData.flatMap((section) =>
@@ -140,15 +150,24 @@ const StudentLearning = () => {
   };
 
   const handleComplete = async (lessonId) => {
-    if (!id || !lessonId || completedLessons.includes(lessonId)) return;
+    if (!id || !lessonId || isLessonCompleted(lessonId)) return;
+
+    console.log("[StudentLearning] handleComplete", {
+      courseId: id,
+      lessonId,
+      completedLessons,
+    });
 
     try {
       const response = await MarkLessonComplete(id, lessonId);
-      const updatedCompletedLessons = Array.isArray(
-        response?.data?.completedLessons,
-      )
-        ? response.data.completedLessons
-        : [...completedLessons, lessonId];
+      console.log("[StudentLearning] mark complete response", response?.data);
+
+      const updatedCompletedLessons = Array.from(
+        new Set([
+          ...completedLessons.map((item) => String(item)),
+          String(lessonId),
+        ]),
+      );
 
       setCompletedLessons(updatedCompletedLessons);
       await fetchProgress(id);
@@ -162,15 +181,15 @@ const StudentLearning = () => {
   };
 
   const handleIncomplete = async (lessonId) => {
-    if (!id || !lessonId || !completedLessons.includes(lessonId)) return;
+    if (!id || !lessonId || !isLessonCompleted(lessonId)) return;
 
     try {
       const response = await MarkLessonIncomplete(id, lessonId);
-      const updatedCompletedLessons = Array.isArray(
-        response?.data?.completedLessons,
-      )
-        ? response.data.completedLessons
-        : completedLessons.filter((item) => item !== lessonId);
+      console.log("[StudentLearning] mark incomplete response", response?.data);
+
+      const updatedCompletedLessons = completedLessons.filter(
+        (item) => String(item) !== String(lessonId),
+      );
 
       setCompletedLessons(updatedCompletedLessons);
       await fetchProgress(id);
@@ -310,7 +329,7 @@ const StudentLearning = () => {
               lesson={selectedLesson}
               lessonDescription={selectedLessonContent}
               videoUrl={selectedLessonVideo}
-              isCompleted={completedLessons.includes(selectedLesson._id)}
+              isCompleted={isLessonCompleted(selectedLesson._id)}
               onMarkComplete={() => handleComplete(selectedLesson._id)}
               onMarkIncomplete={() => handleIncomplete(selectedLesson._id)}
               onPrevious={goToPreviousLesson}

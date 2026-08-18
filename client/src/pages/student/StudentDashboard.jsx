@@ -14,7 +14,7 @@ const StudentDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { logoutState } = useAuth();
+  const { logoutState ,user} = useAuth();
 
   useEffect(() => {
     const helper = async () => {
@@ -61,7 +61,7 @@ const StudentDashboard = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
-              Student Dashboard
+              {user.name} 's dashboard
             </h1>
 
             <p className="text-sm text-gray-500">

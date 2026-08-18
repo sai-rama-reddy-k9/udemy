@@ -68,14 +68,16 @@ const SidebarPlaylist = ({
           {Array.isArray(section.lessons) && section.lessons.length > 0 ? (
             <div className="space-y-1">
               {section.lessons.map((lesson) => {
-                const completed = completedLessons.includes(lesson._id);
+                const completed = completedLessons.some(
+                  (id) => String(id) === String(lesson._id),
+                );
 
                 return (
                   <button
                     key={lesson._id}
                     onClick={() => onSelectLesson(lesson)}
                     className={`w-full text-left p-3 rounded-lg text-sm ${
-                      selectedLessonId === lesson._id
+                      String(selectedLessonId) === String(lesson._id)
                         ? "bg-blue-100 text-blue-700"
                         : "hover:bg-gray-100"
                     }`}

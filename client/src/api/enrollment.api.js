@@ -14,8 +14,24 @@ export const GetLessonById = (courseId, lessonId) =>
 export const GetLesson = (courseId, lessonId) =>
   GetLessonById(courseId, lessonId);
 
-export const MarkLessonComplete = (courseId, lessonId) =>
-  API.patch(`/enrollments/course/${courseId}/lesson/${lessonId}/complete`);
+export const MarkLessonComplete = async (courseId, lessonId) => {
+  const url = `/enrollments/course/${courseId}/lessons/${lessonId}/complete`;
+
+  console.log("[MarkLessonComplete] request", {
+    courseId,
+    lessonId,
+    url,
+  });
+
+  try {
+    const response = await API.patch(url);
+    console.log("[MarkLessonComplete] success", response?.data);
+    return response;
+  } catch (error) {
+    console.error("[MarkLessonComplete] error", error?.response?.data || error);
+    throw error;
+  }
+};
 
 export const CompleteLesson = (courseId, lessonId) =>
   MarkLessonComplete(courseId, lessonId);
@@ -23,8 +39,27 @@ export const CompleteLesson = (courseId, lessonId) =>
 export const ToggleLessonComplete = (courseId, lessonId) =>
   MarkLessonComplete(courseId, lessonId);
 
-export const MarkLessonIncomplete = (courseId, lessonId) =>
-  API.patch(`/enrollments/course/${courseId}/lesson/${lessonId}/incomplete`);
+export const MarkLessonIncomplete = async (courseId, lessonId) => {
+  const url = `/enrollments/course/${courseId}/lessons/${lessonId}/incomplete`;
+
+  console.log("[MarkLessonIncomplete] request", {
+    courseId,
+    lessonId,
+    url,
+  });
+
+  try {
+    const response = await API.patch(url);
+    console.log("[MarkLessonIncomplete] success", response?.data);
+    return response;
+  } catch (error) {
+    console.error(
+      "[MarkLessonIncomplete] error",
+      error?.response?.data || error,
+    );
+    throw error;
+  }
+};
 
 export const IncompleteLesson = (courseId, lessonId) =>
   MarkLessonIncomplete(courseId, lessonId);

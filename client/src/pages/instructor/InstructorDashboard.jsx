@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogoutUser } from "../../api/auth.api"
+import { LogoutUser } from "../../api/auth.api";
 import { useAuth } from "../../context/AuthContext";
 
 import { getAllCourses, deleteCourse } from "../../api/course.api";
@@ -10,39 +10,64 @@ const InstructorDashboard = () => {
   const { logoutState, user } = useAuth();
   const [myCourses, setMyCourses] = useState([]);
 
+  const instructorId = user?._id ?? user?.id;
+
   const handleLogoutClick = async () => {
     try {
       await LogoutUser();
       logoutState();
-      // Redirect back to login after cookie is cleared
       navigate("/login");
     } catch (err) {
       console.error("Logout error:", err);
     }
   };
 
-useEffect(() => {
-  const fetchMyCourses = async () => {
-    if (!user?._id) return;
+  useEffect(() => {
+    const fetchMyCourses = async () => {
+      if (!instructorId) return;
 
-    try {
-      const response = await getAllCourses();
+      try {
+        const response = await getAllCourses();
+        const courses = Array.isArray(response?.data?.courses)
+          ? response.data.courses
+          : [];
 
-      const instructorCourses = response.data.courses.filter(
-        (course) => course.instructor?._id === user._id,
-      );
+        const instructorCourses = courses.filter((course) => {
+          const courseInstructorId =
+            course?.instructor?._id ??
+            course?.instructor?.id ??
+            course?.instructor;
 
-      setMyCourses(instructorCourses);
-    } catch (error) {
-      console.error("Error fetching courses:", error);
-    }
-  };
+          return String(courseInstructorId) === String(instructorId);
+        });
 
-  fetchMyCourses();
-}, [user?._id]);
+        setMyCourses(instructorCourses);
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+        setMyCourses([]);
+      }
+    };
+
+    fetchMyCourses();
+  }, [instructorId]);
+
+  const stats = useMemo(() => {
+    const publishedCourses = myCourses.filter(
+      (course) => course?.isPublished === true,
+    ).length;
+    const draftCourses = myCourses.length - publishedCourses;
+
+    return {
+      publishedCourses,
+      draftCourses,
+      totalRevenue: null,
+      totalEnrolledStudents: null,
+      totalCourses: myCourses.length,
+    };
+  }, [myCourses]);
 
   const handleCourse = async (id) => {
-    navigate(`/instuctor/course/${id}`);
+    navigate(`/instructor/course/${id}`);
   };
 
   const handleEdit = (id) => {
@@ -58,7 +83,6 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-10">
-      {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">
@@ -84,27 +108,39 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Metrics Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
           <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-          <h2 className="text-3xl font-bold text-gray-800 mt-2">$2,550</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mt-2">
+            {stats.totalRevenue === null ? "N/A" : `$${stats.totalRevenue}`}
+          </h2>
+          <p className="text-xs text-gray-500 mt-2">
+            Revenue is not exposed by the current course API.
+          </p>
         </div>
+
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
           <p className="text-sm font-medium text-gray-500">
             Total Enrolled Students
           </p>
-          <h2 className="text-3xl font-bold text-gray-800 mt-2">462</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mt-2">
+            {stats.totalEnrolledStudents === null
+              ? "N/A"
+              : stats.totalEnrolledStudents}
+          </h2>
+          <p className="text-xs text-gray-500 mt-2">
+            Enrollment counts are not returned by the current API.
+          </p>
         </div>
+
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
           <p className="text-sm font-medium text-gray-500">Active Courses</p>
           <h2 className="text-3xl font-bold text-gray-800 mt-2">
-            2 Published / 1 Draft
+            {stats.publishedCourses} Published / {stats.draftCourses} Draft
           </h2>
         </div>
       </div>
 
-      {/* Course List Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-800">Your Courses</h2>
@@ -115,50 +151,47 @@ useEffect(() => {
               <tr className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider">
                 <th className="p-4">Course Title</th>
                 <th className="p-4">Status</th>
-                {/* <th className="p-4">Students</th> */}
                 <th className="p-4">Price</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
-              {myCourses &&
-                myCourses.map((course) => (
-                  <tr key={course._id} className="hover:bg-gray-50 transition">
-                    <td
-                      className="p-4 font-semibold text-gray-800"
-                      onClick={() => handleCourse(course._id)}
+              {myCourses.map((course) => (
+                <tr key={course._id} className="hover:bg-gray-50 transition">
+                  <td
+                    className="p-4 font-semibold text-gray-800 cursor-pointer"
+                    onClick={() => handleCourse(course._id)}
+                  >
+                    {course.title}
+                  </td>
+                  <td className="p-4">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        course.isPublished === true
+                          ? "bg-green-100 text-green-700"
+                          : "bg-yellow-100 text-yellow-700"
+                      }`}
                     >
-                      {course.title}
-                    </td>
-                    <td className="p-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          course.isPublished === true
-                            ? "bg-green-100 text-green-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }`}
-                      >
-                        {course.isPublished ? "Published" : "Draft"}
-                      </span>
-                    </td>
-                    {/* <td className="p-4 text-gray-600">{course.students}</td> */}
-                    <td className="p-4 text-gray-600">{course.price}</td>
-                    <td className="p-4 text-right space-x-4">
-                      <button
-                        className="text-blue-600 hover:underline font-medium"
-                        onClick={() => handleEdit(course._id)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="text-red-600 hover:underline font-medium"
-                        onClick={() => handleDelete(course._id)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      {course.isPublished ? "Published" : "Draft"}
+                    </span>
+                  </td>
+                  <td className="p-4 text-gray-600">{course.price}</td>
+                  <td className="p-4 text-right space-x-4">
+                    <button
+                      className="text-blue-600 hover:underline font-medium"
+                      onClick={() => handleEdit(course._id)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="text-red-600 hover:underline font-medium"
+                      onClick={() => handleDelete(course._id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -168,28 +201,3 @@ useEffect(() => {
 };
 
 export default InstructorDashboard;
-
-// Mock Data (Replace with API call later)
-// const myCourses = [
-//   {
-//     id: 101,
-//     title: "Node.js & Express REST API Masterclass",
-//     students: 342,
-//     revenue: "$1,710",
-//     status: "Published",
-//   },
-//   {
-//     id: 102,
-//     title: "Advanced React & Redux Toolkit",
-//     students: 120,
-//     revenue: "$840",
-//     status: "Published",
-//   },
-//   {
-//     id: 103,
-//     title: "Docker & Kubernetes for Beginners",
-//     students: 0,
-//     revenue: "$0",
-//     status: "Draft",
-//   },
-// ];

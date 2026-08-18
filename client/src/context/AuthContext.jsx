@@ -3,6 +3,18 @@ import API from "../api/axios"; // Your Axios instance with withCredentials: tru
 
 const AuthContext = createContext(null);
 
+const normalizeUser = (userData) => {
+  if (!userData) return userData;
+
+  const normalizedId = userData._id ?? userData.id;
+
+  return {
+    ...userData,
+    _id: normalizedId,
+    id: normalizedId,
+  };
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,10 +24,10 @@ export const AuthProvider = ({ children }) => {
     const checkAuthStatus = async () => {
       try {
         const response = await API.get("/auth/me");
-        setUser(response.data.user);
+        setUser(normalizeUser(response.data.user));
       } catch (err) {
         setUser(null); // Cookie expired or invalid
-        console.log(err)
+        console.log(err);
       } finally {
         setLoading(false);
       }
@@ -25,7 +37,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const loginState = (userData) => {
-    setUser(userData);
+    setUser(normalizeUser(userData));
   };
 
   const logoutState = () => {

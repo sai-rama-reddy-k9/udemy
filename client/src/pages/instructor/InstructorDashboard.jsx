@@ -100,7 +100,7 @@ const InstructorDashboard = () => {
     fetchDashboardStats();
   }, [instructorId]);
 
-  const statsSummary = useMemo(() => {
+  const _statsSummary = useMemo(() => {
     const publishedCourses = myCourses.filter(
       (course) => course?.isPublished === true,
     ).length;
@@ -132,7 +132,7 @@ const InstructorDashboard = () => {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">
-            Instructor Dashboard
+            {user?.name || "Instructor"} Dashboard
           </h1>
           <p className="text-gray-500">
             Manage your courses and view performance analytics.

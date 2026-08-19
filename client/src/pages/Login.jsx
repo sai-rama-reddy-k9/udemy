@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { LoginUser } from "../api/auth.api";
+import { EnrollCourse } from "../api/enrollment.api";
 import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,6 +23,30 @@ const Login = () => {
       const { user } = response.data;
       loginState(user);
       setError("");
+
+      const enrollmentIntent = location.state;
+      if (
+        user.role === "student" &&
+        enrollmentIntent?.redirectAfterLogin === "enroll" &&
+        enrollmentIntent.courseId
+      ) {
+        try {
+          await EnrollCourse(enrollmentIntent.courseId);
+          navigate("/my-enrollments", { replace: true });
+        } catch (enrollmentError) {
+          const message =
+            enrollmentError?.response?.data?.message ||
+            "Unable to enroll in this course.";
+
+          if (message.toLowerCase().includes("already enrolled")) {
+            navigate("/my-enrollments", { replace: true });
+          } else {
+            setError(message);
+          }
+        }
+        return;
+      }
+
       if (user.role === "student") {
         navigate("/student-dashboard");
       } else if (user.role === "instructor") {

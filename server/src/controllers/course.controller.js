@@ -3,7 +3,7 @@ const Course = require("../models/course.model");
 // 1. CREATE a new course (Instructor/Admin only)
 const createCourse = async (req, res) => {
   try {
-    const { title, description, price, category, thumbnail } = req.body;
+    const { title, description, price, category, thumbnail,isPublished } = req.body;
 
     if (!title || !description || price === undefined || !category) {
       return res
@@ -17,6 +17,7 @@ const createCourse = async (req, res) => {
       price,
       category,
       thumbnail,
+      isPublished: isPublished || false,
       instructor: req.user.id, // Extracted from verifyToken middleware
     });
 

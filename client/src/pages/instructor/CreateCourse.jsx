@@ -71,12 +71,16 @@ const CreateCourse = () => {
     );
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, isPublished) => {
     e.preventDefault();
+    if (!courseData.title || !courseData.description || !courseData.subtitle || !courseData.price || !courseData.thumbnail) {
+      alert("Please fill in the required fields: Title, Description, Subtitle, Price, and Thumbnail.");
+      return;
+    }
     try {
       // console.log("Submitting Payload:", { ...courseData, sections });
       // TODO: Call API.post("/courses", payload)
-      await createCourse({ ...courseData, sections });
+      await createCourse({ ...courseData, sections, isPublished });
       navigate("/instructor-dashboard");
     } catch (error) {
       console.log(error);
@@ -100,7 +104,7 @@ const CreateCourse = () => {
             </h1>
           </div>
           <button
-            onClick={handleSubmit}
+            onClick={(e) => handleSubmit(e, true)}
             className="px-6 py-2.5 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition shadow-sm"
           >
             Publish Course
@@ -329,7 +333,7 @@ const CreateCourse = () => {
               </button>
               <button
                 type="button"
-                onClick={handleSubmit}
+                onClick={(e) => handleSubmit(e, false)}
                 className="px-8 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition shadow-md"
               >
                 Save Course

@@ -1,37 +1,76 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { getAllCourses } from "../api/course.api";
+import { useEffect, useState } from "react";
+import { EnrollCourse } from "../api/enrollment.api";
+import { useAuth } from "../context/AuthContext";
 
 const Home = () => {
-  // Mock Featured Courses
-  const featuredCourses = [
-    {
-      id: 1,
-      title: "Complete Web Development Bootcamp",
-      instructor: "Dr. Angela Yu",
-      category: "Development",
-      rating: "4.8",
-      students: "12,400",
-      price: "$19.99",
-    },
-    {
-      id: 2,
-      title: "UI/UX Design Essentials with Figma",
-      instructor: "Daniel Walter Scott",
-      category: "Design",
-      rating: "4.9",
-      students: "8,150",
-      price: "$14.99",
-    },
-    {
-      id: 3,
-      title: "Data Science & Machine Learning A-Z",
-      instructor: "Kirill Eremenko",
-      category: "Data Science",
-      rating: "4.7",
-      students: "15,300",
-      price: "$24.99",
-    },
-  ];
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [featuredCourses, setFeaturedCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [coursesError, setCoursesError] = useState("");
+  const [enrollmentError, setEnrollmentError] = useState("");
+  const [enrollingCourseId, setEnrollingCourseId] = useState(null);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setCoursesError("");
+        const response = await getAllCourses({ limit: 100 });
+
+        const publishedCourses = Array.isArray(response?.data?.courses)
+          ? response.data.courses.filter(
+              (course) => course.isPublished === true,
+            )
+          : [];
+
+        setFeaturedCourses(publishedCourses.slice(0, 3));
+      } catch (error) {
+        console.error("Error fetching featured courses:", error);
+        setCoursesError(
+          error?.response?.data?.message ||
+            "Unable to load featured courses right now.",
+        );
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
+  const handleEnroll = async (courseId) => {
+    setEnrollmentError("");
+
+    if (!user) {
+      navigate("/login", {
+        state: {
+          redirectAfterLogin: "enroll",
+          courseId,
+        },
+      });
+      return;
+    }
+
+    try {
+      setEnrollingCourseId(courseId);
+      await EnrollCourse(courseId);
+      navigate("/my-enrollments");
+    } catch (error) {
+      const message =
+        error?.response?.data?.message || "Unable to enroll in this course.";
+
+      if (message.toLowerCase().includes("already enrolled")) {
+        navigate("/my-enrollments");
+      } else {
+        setEnrollmentError(message);
+      }
+    } finally {
+      setEnrollingCourseId(null);
+    }
+  };
 
   const categories = [
     "Development",
@@ -72,7 +111,12 @@ const Home = () => {
           </div>
           <div className="md:w-1/2 flex justify-center">
             <div className="w-full max-w-md h-72 bg-blue-500/30 border-2 border-dashed border-blue-300/50 rounded-2xl flex items-center justify-center text-blue-100">
-              [ Hero Illustration / Banner ]
+              {/* [ Hero Illustration / Banner ] */}
+              <img
+                src="banner.png"
+                alt="Hero Illustration"
+                className="w-full h-full object-cover rounded-2xl"
+              />
             </div>
           </div>
         </div>
@@ -131,46 +175,81 @@ const Home = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {featuredCourses.map((course) => (
-            <div
-              key={course.id}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition"
-            >
-              <div>
-                <div className="h-44 bg-gray-200 w-full flex items-center justify-center text-gray-400 font-medium">
-                  Course Thumbnail
-                </div>
-                <div className="p-6">
-                  <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
-                    {course.category}
-                  </span>
-                  <h3 className="text-lg font-bold text-gray-800 mt-2 line-clamp-2">
-                    {course.title}
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {course.instructor}
-                  </p>
+          {loadingCourses && (
+            <p className="md:col-span-3 text-center text-gray-500 py-12">
+              Loading featured courses...
+            </p>
+          )}
 
-                  <div className="flex items-center gap-2 mt-4 text-sm text-gray-600">
-                    <span className="font-bold text-amber-500">
-                      ★ {course.rating}
+          {!loadingCourses && coursesError && (
+            <p className="md:col-span-3 text-center text-red-600 py-12">
+              {coursesError}
+            </p>
+          )}
+
+          {!loadingCourses && !coursesError && featuredCourses.length === 0 && (
+            <p className="md:col-span-3 text-center text-gray-500 py-12">
+              No published courses are available yet.
+            </p>
+          )}
+
+          {!loadingCourses &&
+            !coursesError &&
+            featuredCourses.map((course) => (
+              <div
+                key={course._id}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition"
+              >
+                <div>
+                  <div className="h-44 bg-gray-200 w-full flex items-center justify-center text-gray-400 font-medium">
+                    <img
+                      src={
+                        course.thumbnail ||
+                        "https://images.unsplash.com/photo-1498050108023-c5249f4df085"
+                      }
+                      alt={course.title || "Course"}
+                      className="w-full h-full object-cover"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src =
+                          "https://images.unsplash.com/photo-1498050108023-c5249f4df085";
+                      }}
+                    />
+                  </div>
+                  <div className="p-6">
+                    <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+                      {course.category}
                     </span>
-                    <span>({course.students} students)</span>
+                    <h3 className="text-lg font-bold text-gray-800 mt-2 line-clamp-2">
+                      {course.title}
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {course.instructor?.name || "Instructor"}
+                    </p>
                   </div>
                 </div>
-              </div>
 
-              <div className="p-6 border-t border-gray-100 flex items-center justify-between">
-                <span className="text-xl font-bold text-gray-900">
-                  {course.price}
-                </span>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
-                  Enroll Now
-                </button>
+                <div className="p-6 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-xl font-bold text-gray-900">
+                    ₹{course.price}
+                  </span>
+                  <button
+                    onClick={() => handleEnroll(course._id)}
+                    disabled={enrollingCourseId === course._id}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-60"
+                  >
+                    {enrollingCourseId === course._id
+                      ? "Enrolling..."
+                      : "Enroll Now"}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
+
+        {enrollmentError && (
+          <p className="mt-6 text-center text-red-600">{enrollmentError}</p>
+        )}
       </section>
 
       {/* 5. Why Choose Us (About Section) */}

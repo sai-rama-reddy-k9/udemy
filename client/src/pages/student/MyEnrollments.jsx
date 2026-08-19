@@ -153,6 +153,11 @@ const MyEnrollments = () => {
                         }
                         alt={enrollment.course?.title || "Course"}
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src =
+                            "https://images.unsplash.com/photo-1498050108023-c5249f4df085";
+                        }}
                       />
                     </div>
 

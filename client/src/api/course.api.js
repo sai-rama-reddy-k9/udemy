@@ -2,10 +2,11 @@ import API from "./axios";
 
 export const createCourse = (courseData) => API.post("/course", courseData);
 
-export const getAllCourses = () =>
+export const getAllCourses = (params = {}) =>
   API.get("/course", {
     params: {
       _t: Date.now(),
+      ...params,
     },
   });
 

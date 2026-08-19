@@ -14,15 +14,21 @@ const StudentDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { logoutState ,user} = useAuth();
+  const { logoutState, user } = useAuth();
 
   useEffect(() => {
     const helper = async () => {
       setLoading(true);
 
       try {
-        const response = await getAllCourses();
-        setMyCourses(response.data.courses);
+        const response = await getAllCourses({limit: 100, page: 1});
+        const publishedCourses = Array.isArray(response?.data?.courses)
+          ? response.data.courses.filter(
+              (course) => course?.isPublished === true,
+            )
+          : [];
+
+        setMyCourses(publishedCourses);
       } catch (error) {
         console.log(error);
       } finally {
@@ -154,8 +160,16 @@ const StudentDashboard = () => {
               >
                 <div className="h-48 bg-gray-200">
                   <img
-                    src="https://images.unsplash.com/photo-1498050108023-c5249f4df085"
+                    src={
+                      course.thumbnail ||
+                      "https://images.unsplash.com/photo-1498050108023-c5249f4df085"
+                    }
                     alt="Course"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src =
+                        "https://images.unsplash.com/photo-1498050108023-c5249f4df085";
+                    }}
                     className="w-full h-full object-cover"
                   />
                 </div>
